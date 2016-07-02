@@ -35,14 +35,14 @@ public class {{classname}} {{#parent}}extends {{{parent}}}{{/parent}} {{#seriali
    * maximum: {{maximum}}{{/maximum}}
    **/
   {{#required}}
-  @NotNull{{/required}}{{! 
-}}{{#pattern}}
+  @NotNull{{/required}}{{^required}}
+  @Null{{/required}}{{#pattern}}
   @Pattern(regexp="{{pattern}}"){{/pattern}}{{#minLength}}{{#maxLength}}
   @Size(min={{minLength}},max={{maxLength}}){{/maxLength}}{{/minLength}}{{#minLength}}{{^maxLength}}
   @Size(min={{minLength}}){{/maxLength}}{{/minLength}}{{^minLength}}{{#maxLength}}
   @Size(max={{maxLength}}){{/maxLength}}{{/minLength}}{{#minimum}}
-  @Min({{minimum}}){{/minimum}}{{#maximum}}
-  @Max({{maximum}}){{/maximum}}
+  //@Min({{minimum}}){{/minimum}}{{#maximum}}
+  //@Max({{maximum}}){{/maximum}}
   @ApiModelProperty({{#required}}required = {{required}}, {{/required}}value = "{{{description}}}")
   @JsonProperty("{{baseName}}")
   public {{{datatypeWithEnum}}} {{getter}}() {
