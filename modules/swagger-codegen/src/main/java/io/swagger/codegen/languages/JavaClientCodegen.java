@@ -1,17 +1,27 @@
 package io.swagger.codegen.languages;
 
-import io.swagger.codegen.*;
-import io.swagger.codegen.languages.features.BeanValidationFeatures;
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.*;
+import io.swagger.codegen.CliOption;
+import io.swagger.codegen.CodegenConstants;
+import io.swagger.codegen.CodegenModel;
+import io.swagger.codegen.CodegenOperation;
+import io.swagger.codegen.CodegenProperty;
+import io.swagger.codegen.CodegenType;
+import io.swagger.codegen.SupportingFile;
+import io.swagger.codegen.languages.features.BeanValidationFeatures;
+import io.swagger.codegen.languages.features.PerformBeanValidationFeatures;
 
-public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValidationFeatures {
+public class JavaClientCodegen extends AbstractJavaCodegen
+        implements BeanValidationFeatures, PerformBeanValidationFeatures {
     @SuppressWarnings("hiding")
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaClientCodegen.class);
 
@@ -27,6 +37,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValida
     protected boolean parcelableModel = false;
     protected boolean supportJava6= false;
     protected boolean useBeanValidation = false;
+    protected boolean performBeanValidation = false;
 
     public JavaClientCodegen() {
         super();
@@ -41,6 +52,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValida
         cliOptions.add(CliOption.newBoolean(PARCELABLE_MODEL, "Whether to generate models for Android that implement Parcelable with the okhttp-gson library."));
         cliOptions.add(CliOption.newBoolean(SUPPORT_JAVA6, "Whether to support Java6 with the Jersey1 library."));
         cliOptions.add(CliOption.newBoolean(USE_BEANVALIDATION, "Use BeanValidation API annotations"));
+        cliOptions.add(CliOption.newBoolean(PERFORM_BEANVALIDATION, "Perform BeanValidation"));
 
         supportedLibraries.put("jersey1", "HTTP client: Jersey client 1.19.1. JSON processing: Jackson 2.7.0. Enable Java6 support using '-DsupportJava6=true'.");
         supportedLibraries.put("feign", "HTTP client: Netflix Feign 8.16.0. JSON processing: Jackson 2.7.0");
@@ -87,11 +99,11 @@ public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValida
         additionalProperties.put(PARCELABLE_MODEL, parcelableModel);
         
         if (additionalProperties.containsKey(USE_BEANVALIDATION)) {
-            boolean useBeanValidationProp = Boolean.valueOf(additionalProperties.get(USE_BEANVALIDATION).toString());
-            this.setUseBeanValidation(useBeanValidationProp);
-            
-            // write back as boolean
-            additionalProperties.put(USE_BEANVALIDATION, useBeanValidationProp);
+            this.setUseBeanValidation(convertPropertyToBooleanAndWriteBack(USE_BEANVALIDATION));
+        }
+
+        if (additionalProperties.containsKey(PERFORM_BEANVALIDATION)) {
+            this.setPerformBeanValidation(convertPropertyToBooleanAndWriteBack(PERFORM_BEANVALIDATION));
         }
 
         if (additionalProperties.containsKey(SUPPORT_JAVA6)) {
@@ -110,6 +122,13 @@ public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValida
         writeOptional(outputFolder, new SupportingFile("settings.gradle.mustache", "", "settings.gradle"));
         writeOptional(outputFolder, new SupportingFile("gradle.properties.mustache", "", "gradle.properties"));
         writeOptional(outputFolder, new SupportingFile("manifest.mustache", projectFolder, "AndroidManifest.xml"));
+
+        if (performBeanValidation) {
+            supportingFiles.add(
+                    new SupportingFile("BeanValidationException.mustache", invokerFolder,
+                            "BeanValidationException.java"));
+        }
+
         supportingFiles.add(new SupportingFile("travis.mustache", "", ".travis.yml"));
         supportingFiles.add(new SupportingFile("ApiClient.mustache", invokerFolder, "ApiClient.java"));
         supportingFiles.add(new SupportingFile("StringUtil.mustache", invokerFolder, "StringUtil.java"));
@@ -259,6 +278,10 @@ public class JavaClientCodegen extends AbstractJavaCodegen implements BeanValida
 
     public void setUseBeanValidation(boolean useBeanValidation) {
         this.useBeanValidation = useBeanValidation;
+    }
+
+    public void setPerformBeanValidation(boolean performBeanValidation) {
+        this.performBeanValidation = performBeanValidation;
     }
 
 }
